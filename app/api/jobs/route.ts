@@ -29,3 +29,20 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const jobs = await prisma.job.findMany({
+      orderBy: {
+        postedAt: "desc",
+      },
+    });
+    return NextResponse.json(jobs);
+  } catch (error) {
+    console.error("Error posting job:", error);
+    return NextResponse.json(
+      { message: "Failed to post job" },
+      { status: 500 }
+    );
+  }
+}

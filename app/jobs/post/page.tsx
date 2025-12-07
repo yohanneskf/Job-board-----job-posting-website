@@ -22,13 +22,7 @@ export default function PostJobPage() {
         },
         body: JSON.stringify(data),
       });
-      if (response.ok) {
-        // Handle successful job posting (e.g., redirect or show a success message)
-        console.log("Job posted successfully");
-      } else {
-        // Handle errors
-        console.error("Failed to post job");
-      }
+      window.location.href = "/jobs"; // Redirect to home or jobs listing page after successful submission
     } catch (error) {
       console.error("Error submitting form:", error);
     }
