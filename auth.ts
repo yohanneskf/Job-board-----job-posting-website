@@ -1,6 +1,7 @@
 // auth.ts
 import NextAuth from "next-auth";
 import Github from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "./lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -53,6 +54,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           company: profile.company,
         };
       },
+    }),
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
   ],
   callbacks: {
