@@ -19,9 +19,9 @@ export default async function DashboardPage() {
     redirect("/auth/signin");
   }
 
-  const [applications, postedJobs] = await Promise.all([
-    // application query
-    prisma.application.findMany({
+  const [proposals, postedJobs] = await Promise.all([
+    // proposal query
+    prisma.proposal.findMany({
       where: {
         userId: session.user.id,
       },
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         },
       },
       orderBy: {
-        appliedAt: "desc",
+        createdAt: "desc",
       },
     }),
     // jobs query
@@ -42,9 +42,10 @@ export default async function DashboardPage() {
         postedById: session.user.id,
       },
       include: {
+        postedBy: true,
         _count: {
           select: {
-            applications: true,
+            proposals: true,
           },
         },
       },
@@ -55,7 +56,9 @@ export default async function DashboardPage() {
   ]);
 
   // Helper function for status badge styling
-  const getStatusClasses = (status: "PENDING" | "ACCEPTED" | "REJECTED") => {
+  const getStatusClasses = (
+    status: "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN"
+  ) => {
     switch (status) {
       case "ACCEPTED":
         return "bg-green-100 text-green-700 ring-green-500/10";
@@ -67,7 +70,9 @@ export default async function DashboardPage() {
     }
   };
 
-  const getStatusIcon = (status: "PENDING" | "ACCEPTED" | "REJECTED") => {
+  const getStatusIcon = (
+    status: "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN"
+  ) => {
     switch (status) {
       case "ACCEPTED":
         return <CheckCircleIcon className="h-4 w-4 mr-1" />;
@@ -118,7 +123,7 @@ export default async function DashboardPage() {
                       <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                     </h3>
                     <p className="text-md text-gray-600 font-medium">
-                      {job.company}
+                      {(job.postedBy as any).company || job.postedBy.name}
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 pt-1">
                       <span className="flex items-center space-x-1">
@@ -142,13 +147,13 @@ export default async function DashboardPage() {
                   <div className="flex flex-col items-end space-y-3 pl-4">
                     <span className="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full bg-teal-100 text-teal-800 ring-2 ring-teal-500/10">
                       <UsersIcon className="h-4 w-4 mr-1" />
-                      {job._count.applications} applications
+                      {job._count.proposals} proposals
                     </span>
                     <Link
-                      href={`/jobs/${job.id}`}
+                      href={`/proposals`} // Using /proposals as client view
                       className="text-teal-600 hover:text-teal-800 text-sm font-medium transition duration-150"
                     >
-                      View Job & Applications
+                      View Proposals
                     </Link>
                   </div>
                 </div>
@@ -157,16 +162,16 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* --- COLUMN 2: Your Applications (Job Seeker View) --- */}
+        {/* --- COLUMN 2: Your Proposals (Job Seeker View) --- */}
         <div className="lg:order-2">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-4 mb-6">
-            Your Applications
+            Your Proposals
           </h2>
 
           <div className="space-y-4">
-            {applications.length === 0 ? (
+            {proposals.length === 0 ? (
               <p className="p-6 text-gray-500 bg-white rounded-lg shadow-sm">
-                You haven't applied to any jobs yet.{" "}
+                You haven't submitted any proposals yet.{" "}
                 <Link
                   href="/jobs"
                   className="text-teal-600 hover:text-teal-700 font-medium"
@@ -175,39 +180,37 @@ export default async function DashboardPage() {
                 </Link>
               </p>
             ) : (
-              applications.map((application) => (
+              proposals.map((proposal) => (
                 <div
-                  key={application.id}
+                  key={proposal.id}
                   className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition duration-300 flex justify-between items-start border border-gray-100"
                 >
                   <div className="flex-grow space-y-1">
                     <h3 className="text-xl font-bold text-gray-900 hover:text-teal-600 transition duration-150">
-                      <Link href={`/jobs/${application.job.id}`}>
-                        {application.job.title}
+                      <Link href={`/jobs/${proposal.job.id}`}>
+                        {proposal.job.title}
                       </Link>
                     </h3>
                     <p className="text-md text-gray-600 font-medium">
-                      {application.job.company}
+                      {(proposal.job.postedBy as any).company ||
+                        proposal.job.postedBy.name}
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 pt-1">
                       <span className="flex items-center space-x-1">
                         <MapPinIcon className="h-4 w-4" />
-                        <span>{application.job.location}</span>
+                        <span>{proposal.job.location}</span>
                       </span>
                       <span className="flex items-center space-x-1">
                         <BriefcaseIcon className="h-4 w-4" />
-                        <span>{application.job.type}</span>
+                        <span>{proposal.job.type}</span>
                       </span>
                       <span className="flex items-center space-x-1">
                         <ClockIcon className="h-4 w-4" />
                         <span className="text-teal-700 font-medium">
-                          Applied{" "}
-                          {formatDistanceToNow(
-                            new Date(application.appliedAt),
-                            {
-                              addSuffix: true,
-                            }
-                          )}
+                          Sent{" "}
+                          {formatDistanceToNow(new Date(proposal.createdAt), {
+                            addSuffix: true,
+                          })}
                         </span>
                       </span>
                     </div>
@@ -215,22 +218,16 @@ export default async function DashboardPage() {
                   <div className="flex flex-col items-end space-y-3 pl-4">
                     <span
                       className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ring-2 ${getStatusClasses(
-                        application.status as
-                          | "PENDING"
-                          | "ACCEPTED"
-                          | "REJECTED"
+                        proposal.status as "PENDING" | "ACCEPTED" | "REJECTED"
                       )}`}
                     >
                       {getStatusIcon(
-                        application.status as
-                          | "PENDING"
-                          | "ACCEPTED"
-                          | "REJECTED"
+                        proposal.status as "PENDING" | "ACCEPTED" | "REJECTED"
                       )}
-                      {application.status}
+                      {proposal.status}
                     </span>
                     <Link
-                      href={`/jobs/${application.job.id}`}
+                      href={`/jobs/${proposal.job.id}`}
                       className="text-teal-600 hover:text-teal-800 text-sm font-medium transition duration-150"
                     >
                       View Job Details

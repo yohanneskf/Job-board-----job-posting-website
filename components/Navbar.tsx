@@ -10,11 +10,12 @@ import {
   ArrowRightOnRectangleIcon,
   UserIcon,
   ArrowLeftOnRectangleIcon,
-  AcademicCapIcon,
+  DocumentTextIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
-import { usePathname } from "next/navigation"; //
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -25,8 +26,11 @@ export default function Navbar() {
     await signOut({ callbackUrl: "/" });
   };
 
-  const linkClass = (href: string, baseClasses: string) => {
+  const linkClass = (href: string, baseClasses: string, isPrimary = false) => {
     const isActive = pathname === href;
+    if (isPrimary) {
+      return `${baseClasses} bg-teal-600 text-white hover:bg-teal-700 shadow-md transform hover:scale-105 transition-all`;
+    }
     return `${baseClasses} ${
       isActive
         ? "bg-teal-50 text-teal-700 font-bold"
@@ -34,28 +38,55 @@ export default function Navbar() {
     }`;
   };
 
-  const navItems = [
-    { name: "Home", href: "/", icon: HomeIcon },
-    { name: "Browse Jobs", href: "/jobs", icon: MagnifyingGlassIcon },
+  const userRole = (session?.user as any)?.role || "FREELANCER";
+
+  // Define links based on role
+  const commonLinks = [
+    { name: "Home", href: "/", icon: HomeIcon, isPrimary: false },
+  ];
+
+  const freelancerLinks = [
+    {
+      name: "Find Work",
+      href: "/jobs",
+      icon: MagnifyingGlassIcon,
+      isPrimary: false,
+    },
+    {
+      name: "My Proposals",
+      href: "/proposals",
+      icon: DocumentTextIcon,
+      isPrimary: false,
+    },
+  ];
+
+  const clientLinks = [
     {
       name: "Post a Job",
       href: "/jobs/post",
       icon: ClipboardDocumentListIcon,
       isPrimary: true,
     },
+    { name: "Proposals / Jobs", href: "/proposals", icon: DocumentTextIcon }, // Client sees proposals for their jobs
   ];
 
+  const roleLinks = userRole === "CLIENT" ? clientLinks : freelancerLinks;
+
+  const navItems = [...commonLinks, ...roleLinks];
+
   return (
-    <nav className="fixed top-0 w-full z-10 bg-white shadow-md">
+    <nav className="fixed top-0 w-full z-20 bg-white shadow-sm border-b border-gray-100 backdrop-blur-md bg-white/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0 flex items-center">
             <Link
               href={"/"}
-              className="flex items-center space-x-2 text-teal-600 hover:text-teal-800"
+              className="flex items-center space-x-2 text-teal-600 hover:text-teal-800 transition"
             >
-              <BriefcaseIcon className="size-6" />
-              <h1 className="text-xl font-bold tracking-wide">Job Board</h1>
+              <BriefcaseIcon className="size-8" />
+              <span className="text-xl font-extrabold tracking-tight text-gray-900">
+                Work<span className="text-teal-600">Hive</span>
+              </span>
             </Link>
           </div>
 
@@ -73,14 +104,15 @@ export default function Navbar() {
             </button>
           </div>
 
-          <div className="hidden sm:ml-6 sm:flex sm:space-x-2 lg:space-x-4 items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:space-x-4 items-center">
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={linkClass(
                   item.href,
-                  "px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out whitespace-nowrap"
+                  "px-3 py-2 rounded-full text-sm font-medium transition duration-150 ease-in-out whitespace-nowrap",
+                  item.isPrimary
                 )}
               >
                 {item.name}
@@ -88,40 +120,53 @@ export default function Navbar() {
             ))}
 
             {session ? (
-              <>
+              <div className="flex items-center space-x-3 ml-4 border-l pl-4 border-gray-200">
                 <Link
-                  href={"/dashboard"}
+                  href={"/profile"}
                   className={linkClass(
-                    "/dashboard",
-                    "px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                    "/profile",
+                    "flex items-center px-3 py-2 rounded-full text-sm font-medium transition duration-150 ease-in-out"
                   )}
                 >
-                  Dashboard
+                  <UserCircleIcon className="h-5 w-5 mr-1" />
+                  <span className="hidden lg:inline">
+                    {session.user?.name?.split(" ")[0]}
+                  </span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="text-gray-700 hover:bg-red-50 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out whitespace-nowrap"
+                  className="text-gray-500 hover:bg-red-50 hover:text-red-600 p-2 rounded-full transition duration-150 ease-in-out"
+                  title="Sign Out"
                 >
-                  LogOut
+                  <ArrowLeftOnRectangleIcon className="h-5 w-5" />
                 </button>
-              </>
+              </div>
             ) : (
-              <Link
-                href={"/auth/signin"}
-                className={linkClass(
-                  "/auth/signin",
-                  "px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out whitespace-nowrap"
-                )}
-              >
-                LogIn
-              </Link>
+              <div className="flex items-center space-x-2 ml-4">
+                <Link
+                  href={"/auth/signin"}
+                  className="text-gray-700 hover:text-teal-600 font-medium px-3 py-2"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href={"/auth/signin"}
+                  className="bg-teal-600 text-white px-5 py-2 rounded-full font-bold hover:bg-teal-700 transition shadow-md hover:shadow-lg"
+                >
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className={`sm:hidden ${isOpen ? "block" : "hidden"}`}>
-        <div className="px-2 pt-2 pb-3 space-y-1">
+      <div
+        className={`sm:hidden ${
+          isOpen ? "block" : "hidden"
+        } border-t border-gray-100`}
+      >
+        <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -131,14 +176,12 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
                 className={linkClass(
                   item.href,
-                  "w-full flex items-center px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out"
+                  "w-full flex items-center px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out",
+                  item.isPrimary
                 )}
                 aria-current={pathname === item.href ? "page" : undefined}
               >
-                <Icon
-                  className="h-6 w-6 mr-3 text-teal-600"
-                  aria-hidden="true"
-                />
+                <Icon className="h-5 w-5 mr-3" aria-hidden="true" />
                 {item.name}
               </Link>
             );
@@ -147,19 +190,15 @@ export default function Navbar() {
           {session ? (
             <>
               <Link
-                href={"/dashboard"}
+                href={"/profile"}
                 onClick={() => setIsOpen(false)}
-                className={linkClass(
-                  "/dashboard",
-                  "w-full flex items-center px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out"
-                )}
-                aria-current={pathname === "/dashboard" ? "page" : undefined}
+                className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
               >
-                <UserIcon
-                  className="h-6 w-6 mr-3 text-teal-600"
+                <UserCircleIcon
+                  className="h-5 w-5 mr-3 text-teal-600"
                   aria-hidden="true"
                 />
-                Dashboard
+                My Profile
               </Link>
               <button
                 onClick={() => {
@@ -169,7 +208,7 @@ export default function Navbar() {
                 className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
               >
                 <ArrowLeftOnRectangleIcon
-                  className="h-6 w-6 mr-3 text-red-600"
+                  className="h-5 w-5 mr-3 text-red-600"
                   aria-hidden="true"
                 />
                 LogOut
@@ -179,16 +218,13 @@ export default function Navbar() {
             <Link
               href={"/auth/signin"}
               onClick={() => setIsOpen(false)}
-              className={linkClass(
-                "/auth/signin",
-                "w-full flex items-center px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out"
-              )}
+              className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
             >
               <ArrowRightOnRectangleIcon
-                className="h-6 w-6 mr-3 text-teal-600"
+                className="h-5 w-5 mr-3 text-teal-600"
                 aria-hidden="true"
               />
-              LogIn
+              Sign In
             </Link>
           )}
         </div>

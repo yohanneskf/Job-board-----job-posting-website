@@ -63,6 +63,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         token.name = user.name;
         token.email = user.email;
         token.image = user.image;
+        token.role = (user as any).role; // Add role to token
 
         // Store additional GitHub info in token (not in DB)
         token.username = (user as any).username;
@@ -79,6 +80,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         session.user.image = token.image as string;
+        (session.user as any).role = token.role as string; // Add role to session
 
         // Additional GitHub info from token
         (session.user as any).username = token.username as string;

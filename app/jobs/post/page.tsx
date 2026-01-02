@@ -12,6 +12,7 @@ export default function PostJobPage() {
     "idle" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [budgetType, setBudgetType] = useState<"FIXED" | "HOURLY">("FIXED");
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,14 +21,25 @@ export default function PostJobPage() {
     setErrorMessage("");
 
     const formData = new FormData(e.currentTarget);
-    const data = {
+
+    // Construct payload based on budget type
+    const payload: any = {
       title: formData.get("title"),
-      company: formData.get("company"),
       location: formData.get("location"),
       type: formData.get("type"),
       description: formData.get("description"),
-      salary: formData.get("salary"),
+      budgetType: budgetType,
     };
+
+    if (budgetType === "FIXED") {
+      const budgetVal = formData.get("budget");
+      payload.budget = budgetVal ? parseFloat(budgetVal.toString()) : null;
+    } else {
+      const minVal = formData.get("minRate");
+      const maxVal = formData.get("maxRate");
+      payload.minRate = minVal ? parseFloat(minVal.toString()) : null;
+      payload.maxRate = maxVal ? parseFloat(maxVal.toString()) : null;
+    }
 
     try {
       const response = await fetch("/api/jobs", {
@@ -35,7 +47,7 @@ export default function PostJobPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -46,7 +58,6 @@ export default function PostJobPage() {
       }
 
       setSubmitStatus("success");
-      // Redirect after a short delay to allow user to see success message
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
@@ -64,13 +75,11 @@ export default function PostJobPage() {
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-6">Post a Job</h1>
 
-      {/* Form Card Container */}
       <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-100">
         <p className="text-gray-600 mb-8 pb-4 border-b border-gray-100">
           Fill out the details below to publish your job listing immediately.
         </p>
 
-        {/* Submission Status Messages */}
         {submitStatus === "success" && (
           <div className="flex items-center p-4 mb-4 bg-green-50 rounded-md border border-green-200 text-green-700 font-medium">
             <CheckCircleIcon className="w-5 h-5 mr-3" />
@@ -80,16 +89,14 @@ export default function PostJobPage() {
         {submitStatus === "error" && (
           <div className="flex items-start p-4 mb-4 bg-red-50 rounded-md border border-red-200 text-red-700 font-medium">
             <XCircleIcon className="w-5 h-5 mr-3 mt-0.5" />
-            <span className="flex-grow">
+            <span className="grow">
               Submission failed: {errorMessage || "Please try again later."}
             </span>
           </div>
         )}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Group 1: Core Details (Title, Company, Location) */}
           <div className="space-y-6">
-            {/* Job Title */}
             <div>
               <label
                 htmlFor="title"
@@ -107,25 +114,6 @@ export default function PostJobPage() {
               />
             </div>
 
-            {/* Company */}
-            <div>
-              <label
-                htmlFor="company"
-                className="block text-sm font-semibold text-gray-700 mb-1"
-              >
-                Company <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="company"
-                id="company"
-                required
-                placeholder="e.g., Tech Innovations Inc."
-                className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-teal-500 focus:border-teal-500 transition duration-150"
-              />
-            </div>
-
-            {/* Location */}
             <div>
               <label
                 htmlFor="location"
@@ -159,32 +147,99 @@ export default function PostJobPage() {
                 className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:ring-teal-500 focus:border-teal-500 transition duration-150"
               >
                 <option value="">Select a type</option>
-                <option value="full-time">Full Time</option>
-                <option value="part-time">Part Time</option>
-                <option value="contract">Contract</option>
-                <option value="internship">Internship</option>
+                <option value="Full-time">Full Time</option>
+                <option value="Part-time">Part Time</option>
+                <option value="Contract">Contract</option>
+                <option value="Freelance">Freelance</option>
               </select>
             </div>
 
-            {/* Salary (optional) */}
+            {/* Added Budget Type Selector */}
             <div>
-              <label
-                htmlFor="salary"
-                className="block text-sm font-semibold text-gray-700 mb-1"
-              >
-                Salary (optional)
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Budget Type
               </label>
-              <input
-                type="text"
-                name="salary"
-                id="salary"
-                placeholder="e.g., $80,000 - $100,000"
-                className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-teal-500 focus:border-teal-500 transition duration-150"
-              />
+              <div className="flex space-x-4 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setBudgetType("FIXED")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                    budgetType === "FIXED"
+                      ? "bg-teal-50 border-teal-500 text-teal-700"
+                      : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Fixed Price
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBudgetType("HOURLY")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                    budgetType === "HOURLY"
+                      ? "bg-teal-50 border-teal-500 text-teal-700"
+                      : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Hourly Rate
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Group 3: Description (Full Width) */}
+          {/* Budget Input Fields Dynamic */}
+          <div className="pt-4 border-t border-gray-100">
+            {budgetType === "FIXED" ? (
+              <div>
+                <label
+                  htmlFor="budget"
+                  className="block text-sm font-semibold text-gray-700 mb-1"
+                >
+                  Fixed Budget ($)
+                </label>
+                <input
+                  type="number"
+                  name="budget"
+                  id="budget"
+                  placeholder="e.g., 5000"
+                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-teal-500 focus:border-teal-500 transition duration-150"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="minRate"
+                    className="block text-sm font-semibold text-gray-700 mb-1"
+                  >
+                    Min Rate ($/hr)
+                  </label>
+                  <input
+                    type="number"
+                    name="minRate"
+                    id="minRate"
+                    placeholder="e.g., 20"
+                    className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-teal-500 focus:border-teal-500 transition duration-150"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="maxRate"
+                    className="block text-sm font-semibold text-gray-700 mb-1"
+                  >
+                    Max Rate ($/hr)
+                  </label>
+                  <input
+                    type="number"
+                    name="maxRate"
+                    id="maxRate"
+                    placeholder="e.g., 50"
+                    className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-teal-500 focus:border-teal-500 transition duration-150"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="pt-4 border-t border-gray-100">
             <label
               htmlFor="description"
@@ -202,7 +257,6 @@ export default function PostJobPage() {
             ></textarea>
           </div>
 
-          {/* Submit Button */}
           <div className="pt-5">
             <button
               type="submit"

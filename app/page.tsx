@@ -81,17 +81,26 @@ export default async function HomePage() {
                       </h3>
                     </Link>
                     <p className="text-md text-gray-600 font-medium">
-                      {job.company}
+                      {job.postedBy.name || "Verified Client"}
                     </p>
 
                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
-                      <span className="flex items-center space-x-1">
-                        <MapPinIcon className="h-4 w-4 text-teal-600" />
-                        <span>{job.location}</span>
-                      </span>
+                      {job.location && (
+                        <span className="flex items-center space-x-1">
+                          <MapPinIcon className="h-4 w-4 text-teal-600" />
+                          <span>{job.location}</span>
+                        </span>
+                      )}
+
                       <span className="flex items-center space-x-1">
                         <BriefcaseIcon className="h-4 w-4 text-teal-600" />
-                        <span>{job.type}</span>
+                        <span>
+                          {job.budgetType === "FIXED"
+                            ? job.budget
+                              ? `$${job.budget}`
+                              : "Fixed"
+                            : "Hourly"}
+                        </span>
                       </span>
                     </div>
                   </div>

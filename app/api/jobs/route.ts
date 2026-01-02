@@ -11,9 +11,19 @@ export async function POST(request: Request) {
 
   try {
     const data = await request.json();
+
+    // Validate required fields if necessary
+
     const jobs = await prisma.job.create({
       data: {
-        ...data,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        type: data.type,
+        budgetType: data.budgetType,
+        budget: data.budget,
+        minRate: data.minRate,
+        maxRate: data.maxRate,
         postedById: session.user.id,
       },
     });
